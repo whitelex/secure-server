@@ -11,6 +11,16 @@
 #               It checks if the required services/packages are already installed before proceeding.
 #               This version creates the MOTD file at the beginning and uses echo to add content after each step.
 #
+
+distro=$(cat /etc/*-release | grep "DISTRIB_ID" | cut -d "=" -f 2-)
+
+if [ "$distro" = "Ubuntu" ]; then
+  echo "$distro"
+else
+  echo "Your system is $distro. Try using another tweak file for your system."
+  exit 1
+fi
+
 # Color Definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
