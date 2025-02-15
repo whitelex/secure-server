@@ -134,13 +134,25 @@ fi
 
 # --- STEP 3: Set Timezone ---
 msg "${BLUE}--- STEP 3: Setting Timezone ---${NC}"
+msg "Please check available timezones at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+msg "Proper format example: America/Toronto"
 
-if confirm "Do you want to proceed with setting the timezone to America/Toronto?"; then
-  msg "Setting timezone to America/Toronto..."
-  sudo timedatectl set-timezone 'America/Toronto'
+while true; do
+  TIMEZONE=$(get_input "Enter the timezone in the format Region/City (e.g., America/Toronto)")
+  if [[ "$TIMEZONE" =~ .*/.* ]]; then
+    msg "${GREEN}Timezone format is valid.${NC}"
+    break
+  else
+    msg "${RED}Error: Invalid timezone format. Please enter in the format Region/City.${NC}"
+  fi
+done
+
+if confirm "Do you want to proceed with setting the timezone to $TIMEZONE?"; then
+  msg "Setting timezone to $TIMEZONE..."
+  sudo timedatectl set-timezone "$TIMEZONE"
 
   if [ $? -eq 0 ]; then
-    msg "${GREEN}Timezone set to America/Toronto successfully.${NC}"
+    msg "${GREEN}Timezone set to $TIMEZONE successfully.${NC}"
   else
     msg "${RED}Error: Failed to set timezone.  Verify the timezone name is correct.${NC}"
     exit 1
@@ -204,6 +216,12 @@ msg "${BLUE}--- STEP 5: Configuring Rsyslog for Graylog ---${NC}"
 
 if confirm "Do you want to proceed with configuring Rsyslog for Graylog?"; then
   msg "Configuring rsyslog for Graylog logging..."
+  
+  # Check if the file exists, create it if it doesn't
+  if [[ ! -f /etc/rsyslog.d/20-graylog.conf ]]; then
+    sudo touch /etc/rsyslog.d/20-graylog.conf
+  fi
+  
   sudo sed -i "/# TCP (reliable)/a auth,authpriv.*  @@${GRAYLOG_SERVER_IP}:${GRAYLOG_PORT}" /etc/rsyslog.d/20-graylog.conf
 
   if [ $? -eq 0 ]; then
