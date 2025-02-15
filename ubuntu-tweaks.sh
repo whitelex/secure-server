@@ -2,7 +2,7 @@
 #
 # Tweaks
 
-distro=$(cat /etc/*-release | grep "DISTRIB_ID" | cut -d "=" -f 2-)
+distro=$(cat /etc/*-release | (grep "DISTRIB_ID" || grep "NAME") | head -n 1 | cut -d "=" -f 2- | tr -d '"')
 
 if [ "$distro" = "Ubuntu" ]; then
   echo "$distro"
