@@ -347,12 +347,40 @@ ${WELCOME_MOTD_NEXT_STEPS}
 
 ${BLUE}---------------------------------------------------------------${NC}
 EOH
-EOF
+EOMOTD
 
 sudo chmod +x "$WELCOME_MESSAGE_FILE"
 msg "${GREEN}Login welcome message script created at ${WELCOME_MESSAGE_FILE}${NC}"
 
+# --- Update .bashrc for Current User ---
+msg "${BLUE}--- Updating .bashrc for current user ---${NC}"
 
-msg "${GREEN}.bashrc updated with security summary and custom prompt.${NC}"
+if confirm "Do you want to add the security summary to your .bashrc?"; then
+  # Check if .bashrc exists; if not, create it
+  if [[ ! -f "$HOME/.bashrc" ]]; then
+      touch "$HOME/.bashrc"
+  fi
+  
+  #Escape newline characters
+  BASHRC_SUMMARY_MESSAGE=$(echo "$BASHRC_SUMMARY_MESSAGE" | sed 's/\n/\\n/g')
+
+  # Add the summary to .bashrc
+  echo "" >> "$HOME/.bashrc"
+  echo "# Server Security Hardening Summary" >> "$HOME/.bashrc"
+  echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" >> "$HOME/.bashrc"
+  echo "echo -e \"${BLUE}          Server Security Hardening Summary                    ${NC}\"" >> "$HOME/.bashrc"
+  echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" >> "$HOME/.bashrc"
+  echo "echo -e \"${BASHRC_SUMMARY_MESSAGE}\"" >> "$HOME/.bashrc"
+  echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" >> "$HOME/.bashrc"
+  echo "" >> "$HOME/.bashrc"
+
+  # Add a custom prompt (example: user@host [SECURED] )
+  echo "# Custom prompt to indicate security hardening" >> "$HOME/.bashrc"
+  echo 'PS1="\\u@\\h [${GREEN}SECURED${NC}] \\w # "' >> "$HOME/.bashrc"
+
+  msg "${GREEN}.bashrc updated with security summary and custom prompt.${NC}"
+else
+  msg "${YELLOW}Skipping .bashrc update.${NC}"
+fi
 
 exit 0
