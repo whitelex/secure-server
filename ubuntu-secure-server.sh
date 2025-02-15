@@ -98,7 +98,7 @@ fi
 msg "${BLUE}--- STEP 2: Install and Configure SSH ---${NC}"
 
 if is_package_installed openssh-server; then
-  msg "${YELLOW}SSH is already installed. Skipping installation.${NC}"
+  msg "${YELLOW}SSH is already installed. Skipping installation and service management.${NC}"
 else
   if confirm "Do you want to proceed with installing and configuring SSH?"; then
     msg "Installing openssh-server..."
@@ -110,21 +110,21 @@ else
       msg "${RED}Error: openssh-server installation failed.${NC}"
       exit 1
     fi
+
+    msg "Starting and enabling sshd service..."
+    sudo systemctl start sshd
+    sudo systemctl enable sshd
+
+    if [ $? -eq 0 ]; then
+      msg "${GREEN}sshd service started and enabled successfully.${NC}"
+    else
+      msg "${RED}Error: Failed to start or enable sshd service.${NC}"
+      exit 1
+    fi
   else
     msg "${YELLOW}Skipping SSH installation.${NC}"
     exit 0
   fi
-fi
-
-msg "Starting and enabling sshd service..."
-sudo systemctl start sshd
-sudo systemctl enable sshd
-
-if [ $? -eq 0 ]; then
-  msg "${GREEN}sshd service started and enabled successfully.${NC}"
-else
-  msg "${RED}Error: Failed to start or enable sshd service.${NC}"
-  exit 1
 fi
 
 # Consider disabling password authentication and enabling key-based authentication here
@@ -221,7 +221,7 @@ else
   exit 0
 fi
 
-# --- STEP 6: Configure Journald for Local Time
+# --- STEP 6: Configure Journald for Local Time ---
 msg "${BLUE}--- STEP 6: Configuring Journald for Local Time ---${NC}"
 
 if confirm "Do you want to proceed with configuring Journald for local time?"; then
