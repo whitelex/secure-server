@@ -1,6 +1,16 @@
 #!/bin/bash
 #
 # Tweaks
+
+distro=$(cat /etc/*-release | grep "DISTRIB_ID" | cut -d "=" -f 2-)
+
+if [ "$distro" = "Ubuntu" ]; then
+  echo "$distro"
+else
+  echo "Your system is $distro. Try using another tweak file for your system."
+  exit 1
+fi
+
 motd="/etc/update-motd.d/"
 
 rm -f $motd/00-header
