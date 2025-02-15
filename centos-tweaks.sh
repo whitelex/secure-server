@@ -2,7 +2,7 @@
 #
 # Tweaks
 
-distro=$(cat /etc/*-release | (grep "DISTRIB_ID" || grep "NAME") | head -n 1 | cut -d "=" -f 2- | tr -d '"')
+distro=$(cat /etc/*-release | grep "NAME" | head -n 1 | cut -d "=" -f 2- | tr -d '"')
 
 if [ "$distro" = "CentOS Stream" ]; then
   echo "$distro"
