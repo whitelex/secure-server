@@ -17,6 +17,10 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'  # No Color
 
+# Initialize summary message variable
+SUMMARY_MESSAGE=""
+BASHRC_SUMMARY_MESSAGE="" # Separate summary for .bashrc
+
 # Function to display messages with color
 msg() {
   echo -e "$1"
@@ -78,6 +82,7 @@ msg "${GREEN}Graylog server port: ${GRAYLOG_PORT}${NC}"
 
 # --- STEP 1: System Update ---
 msg "${BLUE}--- STEP 1: Updating System ---${NC}"
+STEP1_PERFORMED=false
 
 if confirm "Do you want to proceed with updating the system?"; then
   msg "Performing system update..."
@@ -85,6 +90,9 @@ if confirm "Do you want to proceed with updating the system?"; then
 
   if [ $? -eq 0 ]; then
     msg "${GREEN}System update completed successfully.${NC}"
+    SUMMARY_MESSAGE+="${GREEN}- System updated.${NC}\n"
+    BASHRC_SUMMARY_MESSAGE+="- Updated system packages\n"
+    STEP1_PERFORMED=true
   else
     msg "${RED}Error: System update failed.  Check for network connectivity or package manager issues.${NC}"
     exit 1
@@ -95,6 +103,7 @@ fi
 
 # --- STEP 2: Install and Configure SSH ---
 msg "${BLUE}--- STEP 2: Install and Configure SSH ---${NC}"
+STEP2_PERFORMED=false
 
 if is_package_installed openssh-server; then
   msg "${YELLOW}SSH is already installed. Skipping installation and service management.${NC}"
@@ -105,6 +114,9 @@ else
 
     if [ $? -eq 0 ]; then
       msg "${GREEN}openssh-server installed successfully.${NC}"
+      SUMMARY_MESSAGE+="${GREEN}- SSH server installed.${NC}\n"
+      BASHRC_SUMMARY_MESSAGE+="- Installed SSH server\n"
+      STEP2_PERFORMED=true
     else
       msg "${RED}Error: openssh-server installation failed.${NC}"
       exit 1
@@ -116,6 +128,7 @@ else
 
     if [ $? -eq 0 ]; then
       msg "${GREEN}sshd service started and enabled successfully.${NC}"
+      STEP2_PERFORMED=true # Service management also considered part of step 2
     else
       msg "${RED}Error: Failed to start or enable sshd service.${NC}"
       exit 1
@@ -124,6 +137,11 @@ else
     msg "${YELLOW}Skipping SSH installation.${NC}"
   fi
 fi
+if [[ "$STEP2_PERFORMED" == "true" ]]; then
+    SUMMARY_MESSAGE+="${GREEN}- SSH service started and enabled.${NC}\n"
+    BASHRC_SUMMARY_MESSAGE+="- Started and enabled SSH service\n"
+fi
+
 
 # Consider disabling password authentication and enabling key-based authentication here
 # This significantly improves security, but it requires setting up SSH keys first.
@@ -153,6 +171,9 @@ if confirm "Do you want to proceed with setting the timezone to $TIMEZONE?"; the
 
   if [ $? -eq 0 ]; then
     msg "${GREEN}Timezone set to $TIMEZONE successfully.${NC}"
+    SUMMARY_MESSAGE+="${GREEN}- Timezone set to $TIMEZONE.${NC}\n"
+    BASHRC_SUMMARY_MESSAGE+="- Set timezone to $TIMEZONE\n"
+    STEP3_PERFORMED=true
   else
     msg "${RED}Error: Failed to set timezone.  Verify the timezone name is correct.${NC}"
     exit 1
@@ -163,6 +184,7 @@ fi
 
 # --- STEP 4: Install and Configure Fail2ban ---
 msg "${BLUE}--- STEP 4: Install and Configure Fail2ban ---${NC}"
+STEP4_PERFORMED=false
 
 if is_package_installed fail2ban; then
   msg "${YELLOW}Fail2ban is already installed. Skipping installation.${NC}"
@@ -173,6 +195,9 @@ else
 
     if [ $? -eq 0 ]; then
       msg "${GREEN}fail2ban installed successfully.${NC}"
+      SUMMARY_MESSAGE+="${GREEN}- Fail2ban installed.${NC}\n"
+      BASHRC_SUMMARY_MESSAGE+="- Installed Fail2ban\n"
+      STEP4_PERFORMED=true
     else
       msg "${RED}Error: Failed to install fail2ban.${NC}"
       exit 1
@@ -188,6 +213,9 @@ EOF
 
     if [ $? -eq 0 ]; then
       msg "${GREEN}/etc/fail2ban/jail.d/sshd.local created successfully.${NC}"
+      SUMMARY_MESSAGE+="${GREEN}- Fail2ban SSH jail configured.${NC}\n"
+      BASHRC_SUMMARY_MESSAGE+="- Configured Fail2ban SSH jail\n"
+      STEP4_PERFORMED=true
     else
       msg "${RED}Error: Failed to create /etc/fail2ban/jail.d/sshd.local.${NC}"
       exit 1
@@ -197,35 +225,44 @@ EOF
   fi
 fi
 
-msg "Starting and enabling fail2ban service..."
-sudo systemctl start fail2ban
-sudo systemctl enable fail2ban
+if [[ "$STEP4_PERFORMED" == "true" ]]; then
+    msg "Starting and enabling fail2ban service..."
+    sudo systemctl start fail2ban
+    sudo systemctl enable fail2ban
 
-if [ $? -eq 0 ]; then
-  msg "${GREEN}fail2ban service started and enabled successfully.${NC}"
-else
-  msg "${RED}Error: Failed to start or enable fail2ban service.${NC}"
-  exit 1
+    if [ $? -eq 0 ]; then
+      msg "${GREEN}fail2ban service started and enabled successfully.${NC}"
+      SUMMARY_MESSAGE+="${GREEN}- Fail2ban service started and enabled.${NC}\n"
+      BASHRC_SUMMARY_MESSAGE+="- Started and enabled Fail2ban service\n"
+    else
+      msg "${RED}Error: Failed to start or enable fail2ban service.${NC}"
+      exit 1
+    fi
+
+    msg "Checking fail2ban sshd status..."
+    sudo fail2ban-client status sshd
 fi
 
-msg "Checking fail2ban sshd status..."
-sudo fail2ban-client status sshd
 
 # --- STEP 5: Configure Rsyslog for Graylog ---
 msg "${BLUE}--- STEP 5: Configuring Rsyslog for Graylog ---${NC}"
+STEP5_PERFORMED=false
 
 if confirm "Do you want to proceed with configuring Rsyslog for Graylog?"; then
   msg "Configuring rsyslog for Graylog logging..."
-  
+
   # Check if the file exists, create it if it doesn't
   if [[ ! -f /etc/rsyslog.d/20-graylog.conf ]]; then
     sudo touch /etc/rsyslog.d/20-graylog.conf
   fi
-  
+
   sudo sed -i "/# TCP (reliable)/a auth,authpriv.*  @@${GRAYLOG_SERVER_IP}:${GRAYLOG_PORT}" /etc/rsyslog.d/20-graylog.conf
 
   if [ $? -eq 0 ]; then
     msg "${GREEN}rsyslog configuration updated for Graylog successfully.${NC}"
+    SUMMARY_MESSAGE+="${GREEN}- Rsyslog configured for Graylog logging to ${GRAYLOG_SERVER_IP}:${GRAYLOG_PORT}.${NC}\n"
+    BASHRC_SUMMARY_MESSAGE+="- Configured Rsyslog for Graylog\n"
+    STEP5_PERFORMED=true
   else
     msg "${RED}Error: Failed to update rsyslog configuration for Graylog.${NC}"
     exit 1
@@ -236,6 +273,7 @@ fi
 
 # --- STEP 6: Configure Journald for Local Time ---
 msg "${BLUE}--- STEP 6: Configuring Journald for Local Time ---${NC}"
+STEP6_PERFORMED=false
 
 if confirm "Do you want to proceed with configuring Journald for local time?"; then
   msg "Configuring journald to use local time..."
@@ -243,6 +281,9 @@ if confirm "Do you want to proceed with configuring Journald for local time?"; t
 
   if [ $? -eq 0 ]; then
     msg "${GREEN}Journald configuration updated for local time successfully.${NC}"
+    SUMMARY_MESSAGE+="${GREEN}- Journald configured to use local time.${NC}\n"
+    BASHRC_SUMMARY_MESSAGE+="- Configured Journald for local time\n"
+    STEP6_PERFORMED=true
   else
     msg "${RED}Error: Failed to update journald configuration for local time.${NC}"
     exit 1
@@ -257,6 +298,10 @@ sudo systemctl restart rsyslog
 
 if [ $? -eq 0 ]; then
   msg "${GREEN}rsyslog service restarted successfully.${NC}"
+  if [[ "$STEP5_PERFORMED" == "true" ]]; then # Only add to summary if rsyslog config was changed
+    SUMMARY_MESSAGE+="${GREEN}- Rsyslog service restarted.${NC}\n"
+    BASHRC_SUMMARY_MESSAGE+="- Restarted Rsyslog service\n"
+  fi
 else
   msg "${RED}Error: Failed to restart rsyslog service.${NC}"
   exit 1
@@ -271,7 +316,73 @@ msg "${YELLOW}- Disable unnecessary services.${NC}"
 msg "${YELLOW}- Implement intrusion detection and prevention systems (IDS/IPS).${NC}"
 msg "${YELLOW}- Enable automatic security updates.${NC}"
 msg "${YELLOW}- Harden SSH further (disable password authentication, use key-based authentication, change default port).${NC}"
+msg "${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.**${NC}" # Added MFA recommendation here
 
 msg "${GREEN}Server hardening script completed. Please review the output for any errors.${NC}"
+
+# --- Create Welcome Message ---
+WELCOME_MESSAGE_FILE="/etc/update-motd.d/99-security-summary"
+
+msg "${BLUE}--- Creating login welcome message (/etc/update-motd.d) ---${NC}"
+WELCOME_MOTD_NEXT_STEPS="${YELLOW}--- Next Steps and Recommendations ---${NC}
+${YELLOW}- Configure a strong firewall (e.g., ufw).${NC}
+${YELLOW}- Regularly check system logs for suspicious activity.${NC}
+${YELLOW}- Disable unnecessary services.${NC}
+${YELLOW}- Implement intrusion detection and prevention systems (IDS/IPS).${NC}
+${YELLOW}- Enable automatic security updates.${NC}
+${YELLOW}- Harden SSH further (disable password authentication, use key-based authentication, change default port).${NC}
+${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.**${NC}" # Added MFA recommendation here
+
+cat <<EOF | sudo tee "$WELCOME_MESSAGE_FILE"
+#!/bin/bash
+
+cat <<EOMOTD
+${BLUE}---------------------------------------------------------------${NC}
+${BLUE}          Server Security Hardening Summary                    ${NC}
+${BLUE}---------------------------------------------------------------${NC}
+
+${SUMMARY_MESSAGE}
+
+${WELCOME_MOTD_NEXT_STEPS}
+
+${BLUE}---------------------------------------------------------------${NC}
+EOMOTD
+EOF
+
+sudo chmod +x "$WELCOME_MESSAGE_FILE"
+msg "${GREEN}Login welcome message script created at ${WELCOME_MESSAGE_FILE}${NC}"
+
+# --- Configure .bashrc Welcome Message and Prompt ---
+BASHRC_FILE="/root/.bashrc" # Modify root's .bashrc, adjust if needed
+
+msg "${BLUE}--- Configuring .bashrc with summary and custom prompt ---${NC}"
+
+BASHRC_WELCOME_TEXT="
+# Server Security Hardening Summary
+# ---------------------------------
+# This server has been hardened with the following steps:
+$(echo "$BASHRC_SUMMARY_MESSAGE" | sed 's/^/- /')
+# ---------------------------------
+# Next Steps and Recommendations:
+# - Configure a strong firewall (e.g., ufw)
+# - Regularly check system logs for suspicious activity
+# - Disable unnecessary services
+# - Implement intrusion detection and prevention systems (IDS/IPS)
+# - Enable automatic security updates
+# - Harden SSH further (disable password authentication, use key-based authentication, change default port)
+# - **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.** # Added MFA recommendation here
+"
+
+# Append welcome message to .bashrc
+echo -e "\n# --- Security Hardening Summary ---" >> "$BASHRC_FILE"
+echo -e "$BASHRC_WELCOME_TEXT" >> "$BASHRC_FILE"
+
+# Append PS1 prompt to .bashrc
+PS1_LINE="PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '"
+echo -e "\n# Custom Prompt" >> "$BASHRC_FILE"
+echo "$PS1_LINE" >> "$BASHRC_FILE"
+
+
+msg "${GREEN}.bashrc updated with security summary and custom prompt.${NC}"
 
 exit 0
