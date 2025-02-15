@@ -9,6 +9,7 @@
 #               The script will prompt for confirmation before each major step.
 #               It also requires the user to specify the Graylog server IP and port.
 #               It checks if the required services/packages are already installed before proceeding.
+#               This version creates the MOTD file at the beginning and uses echo to add content after each step.
 #
 # Color Definitions
 RED='\033[0;31m'
@@ -20,6 +21,7 @@ NC='\033[0m'  # No Color
 # Initialize summary message variable
 SUMMARY_MESSAGE=""
 BASHRC_SUMMARY_MESSAGE="" # Separate summary for .bashrc
+MOTD_FILE="/etc/update-motd.d/99-security-summary"
 
 # Function to display messages with color
 msg() {
@@ -80,6 +82,16 @@ done
 msg "${GREEN}Graylog server IP: ${GRAYLOG_SERVER_IP}${NC}"
 msg "${GREEN}Graylog server port: ${GRAYLOG_PORT}${NC}"
 
+# --- Create MOTD file at the beginning ---
+msg "${BLUE}--- Creating login welcome message script at ${MOTD_FILE} ---${NC}"
+echo '#!/bin/bash' | sudo tee "$MOTD_FILE" > /dev/null
+echo "" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${BLUE}          Server Security Hardening Summary                    ${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+sudo chmod +x "$MOTD_FILE"
+msg "${GREEN}Login welcome message script created at ${MOTD_FILE}${NC}"
+
 # --- STEP 1: System Update ---
 msg "${BLUE}--- STEP 1: Updating System ---${NC}"
 STEP1_PERFORMED=false
@@ -92,6 +104,7 @@ if confirm "Do you want to proceed with updating the system?"; then
     msg "${GREEN}System update completed successfully.${NC}"
     SUMMARY_MESSAGE+="${GREEN}- System updated.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Updated system packages\n"
+    echo "echo -e \"${GREEN}- System updated.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
     STEP1_PERFORMED=true
   else
     msg "${RED}Error: System update failed.  Check for network connectivity or package manager issues.${NC}"
@@ -116,6 +129,7 @@ else
       msg "${GREEN}openssh-server installed successfully.${NC}"
       SUMMARY_MESSAGE+="${GREEN}- SSH server installed.${NC}\n"
       BASHRC_SUMMARY_MESSAGE+="- Installed SSH server\n"
+      echo "echo -e \"${GREEN}- SSH server installed.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
       STEP2_PERFORMED=true
     else
       msg "${RED}Error: openssh-server installation failed.${NC}"
@@ -140,6 +154,7 @@ fi
 if [[ "$STEP2_PERFORMED" == "true" ]]; then
     SUMMARY_MESSAGE+="${GREEN}- SSH service started and enabled.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Started and enabled SSH service\n"
+    echo "echo -e \"${GREEN}- SSH service started and enabled.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null  # Add to MOTD
 fi
 
 
@@ -173,6 +188,7 @@ if confirm "Do you want to proceed with setting the timezone to $TIMEZONE?"; the
     msg "${GREEN}Timezone set to $TIMEZONE successfully.${NC}"
     SUMMARY_MESSAGE+="${GREEN}- Timezone set to $TIMEZONE.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Set timezone to $TIMEZONE\n"
+     echo "echo -e \"${GREEN}- Timezone set to $TIMEZONE.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
     STEP3_PERFORMED=true
   else
     msg "${RED}Error: Failed to set timezone.  Verify the timezone name is correct.${NC}"
@@ -197,6 +213,7 @@ else
       msg "${GREEN}fail2ban installed successfully.${NC}"
       SUMMARY_MESSAGE+="${GREEN}- Fail2ban installed.${NC}\n"
       BASHRC_SUMMARY_MESSAGE+="- Installed Fail2ban\n"
+      echo "echo -e \"${GREEN}- Fail2ban installed.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null  # Add to MOTD
       STEP4_PERFORMED=true
     else
       msg "${RED}Error: Failed to install fail2ban.${NC}"
@@ -215,6 +232,7 @@ EOF
       msg "${GREEN}/etc/fail2ban/jail.d/sshd.local created successfully.${NC}"
       SUMMARY_MESSAGE+="${GREEN}- Fail2ban SSH jail configured.${NC}\n"
       BASHRC_SUMMARY_MESSAGE+="- Configured Fail2ban SSH jail\n"
+      echo "echo -e \"${GREEN}- Fail2ban SSH jail configured.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
       STEP4_PERFORMED=true
     else
       msg "${RED}Error: Failed to create /etc/fail2ban/jail.d/sshd.local.${NC}"
@@ -234,6 +252,7 @@ if [[ "$STEP4_PERFORMED" == "true" ]]; then
       msg "${GREEN}fail2ban service started and enabled successfully.${NC}"
       SUMMARY_MESSAGE+="${GREEN}- Fail2ban service started and enabled.${NC}\n"
       BASHRC_SUMMARY_MESSAGE+="- Started and enabled Fail2ban service\n"
+      echo "echo -e \"${GREEN}- Fail2ban service started and enabled.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null  # Add to MOTD
     else
       msg "${RED}Error: Failed to start or enable fail2ban service.${NC}"
       exit 1
@@ -262,6 +281,7 @@ if confirm "Do you want to proceed with configuring Rsyslog for Graylog?"; then
     msg "${GREEN}rsyslog configuration updated for Graylog successfully.${NC}"
     SUMMARY_MESSAGE+="${GREEN}- Rsyslog configured for Graylog logging to ${GRAYLOG_SERVER_IP}:${GRAYLOG_PORT}.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Configured Rsyslog for Graylog\n"
+    echo "echo -e \"${GREEN}- Rsyslog configured for Graylog logging to ${GRAYLOG_SERVER_IP}:${GRAYLOG_PORT}.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
     STEP5_PERFORMED=true
   else
     msg "${RED}Error: Failed to update rsyslog configuration for Graylog.${NC}"
@@ -283,6 +303,7 @@ if confirm "Do you want to proceed with configuring Journald for local time?"; t
     msg "${GREEN}Journald configuration updated for local time successfully.${NC}"
     SUMMARY_MESSAGE+="${GREEN}- Journald configured to use local time.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Configured Journald for local time\n"
+    echo "echo -e \"${GREEN}- Journald configured to use local time.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
     STEP6_PERFORMED=true
   else
     msg "${RED}Error: Failed to update journald configuration for local time.${NC}"
@@ -301,11 +322,25 @@ if [ $? -eq 0 ]; then
   if [[ "$STEP5_PERFORMED" == "true" ]]; then # Only add to summary if rsyslog config was changed
     SUMMARY_MESSAGE+="${GREEN}- Rsyslog service restarted.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Restarted Rsyslog service\n"
+    echo "echo -e \"${GREEN}- Rsyslog service restarted.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
   fi
 else
   msg "${RED}Error: Failed to restart rsyslog service.${NC}"
   exit 1
 fi
+
+# --- Add next steps recommendations ---
+msg "${BLUE}--- Adding next steps and recommendations to ${MOTD_FILE} ---${NC}"
+echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}--- Next Steps and Recommendations ---${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}- Configure a strong firewall (e.g., ufw).${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}- Regularly check system logs for suspicious activity.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}- Disable unnecessary services.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}- Implement intrusion detection and prevention systems (IDS/IPS).${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}- Enable automatic security updates.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}- Harden SSH further (disable password authentication, use key-based authentication, change default port).${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.**${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
+echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
 
 # --- STEP 7: Security Best Practices (Optional, but Recommended) ---
 msg "${BLUE}--- STEP 7: Security Best Practices (Optional) ---${NC}"
@@ -320,42 +355,6 @@ msg "${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for en
 
 msg "${GREEN}Server hardening script completed. Please review the output for any errors.${NC}"
 
-# --- Create Welcome Message ---
-WELCOME_MESSAGE_FILE="/etc/update-motd.d/99-security-summary"
-
-msg "${BLUE}--- Creating login welcome message (/etc/update-motd.d) ---${NC}"
-WELCOME_MOTD_NEXT_STEPS="${YELLOW}--- Next Steps and Recommendations ---${NC}
-${YELLOW}- Configure a strong firewall (e.g., ufw).${NC}
-${YELLOW}- Regularly check system logs for suspicious activity.${NC}
-${YELLOW}- Disable unnecessary services.${NC}
-${YELLOW}- Implement intrusion detection and prevention systems (IDS/IPS).${NC}
-${YELLOW}- Enable automatic security updates.${NC}
-${YELLOW}- Harden SSH further (disable password authentication, use key-based authentication, change default port).${NC}
-${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.**${NC}" # Added MFA recommendation here
-
-cat <<'EOMOTD' | sudo tee "$WELCOME_MESSAGE_FILE"
-#!/bin/bash
-
-# This script generates the server security hardening summary for the MOTD.
-
-SUMMARY_MESSAGE=$(eval echo \"${SUMMARY_MESSAGE}\")
-WELCOME_MOTD_NEXT_STEPS=$(eval echo \"${WELCOME_MOTD_NEXT_STEPS}\")
-
-cat <<EOH
-${BLUE}---------------------------------------------------------------${NC}
-${BLUE}          Server Security Hardening Summary                    ${NC}
-${BLUE}---------------------------------------------------------------${NC}
-
-${SUMMARY_MESSAGE}
-
-${WELCOME_MOTD_NEXT_STEPS}
-
-${BLUE}---------------------------------------------------------------${NC}
-EOH
-EOMOTD
-
-sudo chmod +x "$WELCOME_MESSAGE_FILE"
-msg "${GREEN}Login welcome message script created at ${WELCOME_MESSAGE_FILE}${NC}"
 
 # --- Update .bashrc for Current User ---
 msg "${BLUE}--- Updating .bashrc for current user ---${NC}"
