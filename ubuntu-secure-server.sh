@@ -303,7 +303,6 @@ if confirm "Do you want to proceed with configuring Journald for local time?"; t
     msg "${GREEN}Journald configuration updated for local time successfully.${NC}"
     SUMMARY_MESSAGE+="${GREEN}- Journald configured to use local time.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Configured Journald for local time\n"
-    echo "echo -e \"${GREEN}- Journald configured to use local time.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
     STEP6_PERFORMED=true
   else
     msg "${RED}Error: Failed to update journald configuration for local time.${NC}"
@@ -322,7 +321,6 @@ if [ $? -eq 0 ]; then
   if [[ "$STEP5_PERFORMED" == "true" ]]; then # Only add to summary if rsyslog config was changed
     SUMMARY_MESSAGE+="${GREEN}- Rsyslog service restarted.${NC}\n"
     BASHRC_SUMMARY_MESSAGE+="- Restarted Rsyslog service\n"
-    echo "echo -e \"${GREEN}- Rsyslog service restarted.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
   fi
 else
   msg "${RED}Error: Failed to restart rsyslog service.${NC}"
@@ -342,7 +340,26 @@ echo "echo -e \"${YELLOW}- Harden SSH further (disable password authentication, 
 echo "echo -e \"${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.**${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
 echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
 
-# --- STEP 7: Security Best Practices (Optional, but Recommended) ---
+# --- STEP 7: Syntax Highlights/Coloring shell---
+msg "${BLUE}--- STEP 6: Configuring Syntax Highlights & Shell Coloring---${NC}"
+STEP7_PERFORMED=false
+
+if confirm "Do you want to proceed with Configuring Syntax Highlights & Shell Coloring?"; then
+  msg "Configuring Syntax Highlights & Shell Coloring..."
+  export TERM=xterm-256color
+
+  if [ $? -eq 0 ]; then
+    msg "${GREEN}Syntax Highlights & Shell Coloring Configuration complete.${NC}"
+    STEP7_PERFORMED=true
+  else
+    msg "${RED}Error: Failed to configure Syntax Highlights & Shell Coloring.${NC}"
+    exit 1
+  fi
+else
+  msg "${YELLOW}Skipping Syntax Highlights & Shell Coloring configuration.${NC}"
+fi
+
+# --- STEP 8: Security Best Practices (Optional, but Recommended) ---
 msg "${BLUE}--- STEP 7: Security Best Practices (Optional) ---${NC}"
 msg "${YELLOW}Consider implementing these additional security measures:${NC}"
 msg "${YELLOW}- Configure a strong firewall (e.g., ufw).${NC}"
@@ -367,16 +384,6 @@ if confirm "Do you want to add the security summary to your .bashrc?"; then
   
   #Escape newline characters
   BASHRC_SUMMARY_MESSAGE=$(echo "$BASHRC_SUMMARY_MESSAGE" | sed 's/\n/\\n/g')
-
-  # Add the summary to .bashrc
-  echo "" >> "$HOME/.bashrc"
-  echo "# Server Security Hardening Summary" >> "$HOME/.bashrc"
-  echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" >> "$HOME/.bashrc"
-  echo "echo -e \"${BLUE}          Server Security Hardening Summary                    ${NC}\"" >> "$HOME/.bashrc"
-  echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" >> "$HOME/.bashrc"
-  echo "echo -e \"${BASHRC_SUMMARY_MESSAGE}\"" >> "$HOME/.bashrc"
-  echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" >> "$HOME/.bashrc"
-  echo "" >> "$HOME/.bashrc"
 
   # Add a custom prompt (example: user@host [SECURED] )
   echo "# Custom prompt to indicate security hardening" >> "$HOME/.bashrc"
