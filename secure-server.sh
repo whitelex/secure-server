@@ -8,6 +8,7 @@
 #               fail2ban installation, and rsyslog configuration for Graylog.
 #               The script will prompt for confirmation before each major step.
 #               It also requires the user to specify the Graylog server IP and port.
+#               It checks if the required services/packages are already installed before proceeding.
 #
 # Color Definitions
 RED='\033[0;31m'
@@ -44,6 +45,11 @@ confirm() {
 get_input() {
   read -r -p "$1: " input
   echo "$input"
+}
+
+# Function to check if a package is installed
+is_package_installed() {
+  command -v "$1" >/dev/null 2>&1
 }
 
 # --- STEP 0: Get Graylog Server IP and Port ---
@@ -89,40 +95,44 @@ else
 fi
 
 # --- STEP 2: Install and Configure SSH ---
-msg "${BLUE}--- STEP 2: Installing and Configuring SSH ---${NC}"
+msg "${BLUE}--- STEP 2: Install and Configure SSH ---${NC}"
 
-if confirm "Do you want to proceed with installing and configuring SSH?"; then
-  msg "Installing openssh-server..."
-  sudo dnf install openssh-server -y
-
-  if [ $? -eq 0 ]; then
-    msg "${GREEN}openssh-server installed successfully.${NC}"
-  else
-    msg "${RED}Error: openssh-server installation failed.${NC}"
-    exit 1
-  fi
-
-  msg "Starting and enabling sshd service..."
-  sudo systemctl start sshd
-  sudo systemctl enable sshd
-
-  if [ $? -eq 0 ]; then
-    msg "${GREEN}sshd service started and enabled successfully.${NC}"
-  else
-    msg "${RED}Error: Failed to start or enable sshd service.${NC}"
-    exit 1
-  fi
-
-  # Consider disabling password authentication and enabling key-based authentication here
-  # This significantly improves security, but it requires setting up SSH keys first.
-  # Example (Requires prior key setup):
-  #  sudo sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-  #  sudo sed -i 's/^#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config #Recommended to disable root login via SSH
-  #  sudo systemctl restart sshd
+if is_package_installed ssh; then
+  msg "${YELLOW}SSH is already installed. Skipping installation.${NC}"
 else
-  msg "${YELLOW}Skipping SSH installation and configuration.${NC}"
-  exit 0
+  if confirm "Do you want to proceed with installing and configuring SSH?"; then
+    msg "Installing openssh-server..."
+    sudo dnf install openssh-server -y
+
+    if [ $? -eq 0 ]; then
+      msg "${GREEN}openssh-server installed successfully.${NC}"
+    else
+      msg "${RED}Error: openssh-server installation failed.${NC}"
+      exit 1
+    fi
+  else
+    msg "${YELLOW}Skipping SSH installation.${NC}"
+    exit 0
+  fi
 fi
+
+msg "Starting and enabling sshd service..."
+sudo systemctl start sshd
+sudo systemctl enable sshd
+
+if [ $? -eq 0 ]; then
+  msg "${GREEN}sshd service started and enabled successfully.${NC}"
+else
+  msg "${RED}Error: Failed to start or enable sshd service.${NC}"
+  exit 1
+fi
+
+# Consider disabling password authentication and enabling key-based authentication here
+# This significantly improves security, but it requires setting up SSH keys first.
+# Example (Requires prior key setup):
+#  sudo sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+#  sudo sed -i 's/^#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config #Recommended to disable root login via SSH
+#  sudo systemctl restart sshd
 
 # --- STEP 3: Set Timezone ---
 msg "${BLUE}--- STEP 3: Setting Timezone ---${NC}"
@@ -143,31 +153,34 @@ else
 fi
 
 # --- STEP 4: Install and Configure Fail2ban ---
-msg "${BLUE}--- STEP 4: Installing and Configuring Fail2ban ---${NC}"
+msg "${BLUE}--- STEP 4: Install and Configure Fail2ban ---${NC}"
 
-if confirm "Do you want to proceed with installing and configuring Fail2ban?"; then
-  msg "Installing EPEL repository..."
-  sudo dnf install epel-release -y
+if is_package_installed fail2ban-client; then
+  msg "${YELLOW}Fail2ban is already installed. Skipping installation.${NC}"
+else
+  if confirm "Do you want to proceed with installing and configuring Fail2ban?"; then
+    msg "Installing EPEL repository..."
+    sudo dnf install epel-release -y
 
-  if [ $? -eq 0 ]; then
-    msg "${GREEN}EPEL repository installed successfully.${NC}"
-  else
-    msg "${RED}Error: Failed to install EPEL repository.${NC}"
-    exit 1
-  fi
+    if [ $? -eq 0 ]; then
+      msg "${GREEN}EPEL repository installed successfully.${NC}"
+    else
+      msg "${RED}Error: Failed to install EPEL repository.${NC}"
+      exit 1
+    fi
 
-  msg "Installing fail2ban..."
-  sudo dnf install fail2ban -y
+    msg "Installing fail2ban..."
+    sudo dnf install fail2ban -y
 
-  if [ $? -eq 0 ]; then
-    msg "${GREEN}fail2ban installed successfully.${NC}"
-  else
-    msg "${RED}Error: Failed to install fail2ban.${NC}"
-    exit 1
-  fi
+    if [ $? -eq 0 ]; then
+      msg "${GREEN}fail2ban installed successfully.${NC}"
+    else
+      msg "${RED}Error: Failed to install fail2ban.${NC}"
+      exit 1
+    fi
 
-  msg "Creating /etc/fail2ban/jail.d/sshd.local..."
-  cat <<EOF | sudo tee /etc/fail2ban/jail.d/sshd.local
+    msg "Creating /etc/fail2ban/jail.d/sshd.local..."
+    cat <<EOF | sudo tee /etc/fail2ban/jail.d/sshd.local
 [sshd]
 enabled = true
 filter = sshd
@@ -177,33 +190,34 @@ maxretry = 3
 bantime = 600
 EOF
 
-  if [ $? -eq 0 ]; then
-    msg "${GREEN}/etc/fail2ban/jail.d/sshd.local created successfully.${NC}"
+    if [ $? -eq 0 ]; then
+      msg "${GREEN}/etc/fail2ban/jail.d/sshd.local created successfully.${NC}"
+    else
+      msg "${RED}Error: Failed to create /etc/fail2ban/jail.d/sshd.local.${NC}"
+      exit 1
+    fi
   else
-    msg "${RED}Error: Failed to create /etc/fail2ban/jail.d/sshd.local.${NC}"
-    exit 1
+      msg "${YELLOW}Skipping Fail2ban installation.${NC}"
+      exit 0
   fi
-
-  msg "Starting and enabling fail2ban service..."
-  sudo systemctl start fail2ban
-  sudo systemctl enable fail2ban
-
-  if [ $? -eq 0 ]; then
-    msg "${GREEN}fail2ban service started and enabled successfully.${NC}"
-  else
-    msg "${RED}Error: Failed to start or enable fail2ban service.${NC}"
-    exit 1
-  fi
-
-  msg "Checking fail2ban sshd status..."
-  sudo fail2ban-client status sshd
-else
-  msg "${YELLOW}Skipping Fail2ban installation and configuration.${NC}"
-  exit 0
 fi
 
+msg "Starting and enabling fail2ban service..."
+sudo systemctl start fail2ban
+sudo systemctl enable fail2ban
+
+if [ $? -eq 0 ]; then
+  msg "${GREEN}fail2ban service started and enabled successfully.${NC}"
+else
+  msg "${RED}Error: Failed to start or enable fail2ban service.${NC}"
+  exit 1
+fi
+
+msg "Checking fail2ban sshd status..."
+sudo fail2ban-client status sshd
+
 # --- STEP 5: Configure Rsyslog for Graylog ---
-msg "${BLUE}--- STEP 5: Configuring Rsyslog for Graylog ---${NC}"
+msg "${BLUE}--- STEP 5: Configure Rsyslog for Graylog ---${NC}"
 
 if confirm "Do you want to proceed with configuring Rsyslog for Graylog?"; then
   msg "Configuring rsyslog for Graylog logging..."
