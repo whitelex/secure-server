@@ -112,7 +112,6 @@ if confirm "Do you want to proceed with updating the system?"; then
 
   if [ $? -eq 0 ]; then
     msg "${GREEN}System update completed successfully.${NC}"
-    echo "echo -e \"${GREEN}- System updated.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
     STEP1_PERFORMED=true
   else
     msg "${RED}Error: System update failed.  Check for network connectivity or package manager issues.${NC}"
