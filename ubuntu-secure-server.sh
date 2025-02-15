@@ -91,7 +91,6 @@ if confirm "Do you want to proceed with updating the system?"; then
   fi
 else
   msg "${YELLOW}Skipping system update.${NC}"
-  # Removed exit 0 here
 fi
 
 # --- STEP 2: Install and Configure SSH ---
@@ -123,7 +122,6 @@ else
     fi
   else
     msg "${YELLOW}Skipping SSH installation.${NC}"
-    # Removed exit 0 here
   fi
 fi
 
@@ -149,7 +147,6 @@ if confirm "Do you want to proceed with setting the timezone to America/Toronto?
   fi
 else
   msg "${YELLOW}Skipping timezone configuration.${NC}"
-  # Removed exit 0 here
 fi
 
 # --- STEP 4: Install and Configure Fail2ban ---
@@ -184,8 +181,7 @@ EOF
       exit 1
     fi
   else
-      msg "${YELLOW}Skipping Fail2ban installation.${NC}"
-      # Removed exit 0 here
+    msg "${YELLOW}Skipping Fail2ban installation.${NC}"
   fi
 fi
 
@@ -218,7 +214,6 @@ if confirm "Do you want to proceed with configuring Rsyslog for Graylog?"; then
   fi
 else
   msg "${YELLOW}Skipping Rsyslog configuration for Graylog.${NC}"
-  # Removed exit 0 here
 fi
 
 # --- STEP 6: Configure Journald for Local Time ---
@@ -236,7 +231,6 @@ if confirm "Do you want to proceed with configuring Journald for local time?"; t
   fi
 else
   msg "${YELLOW}Skipping Journald configuration for local time.${NC}"
-  # Removed exit 0 here
 fi
 
 # Restart rsyslog after changes
