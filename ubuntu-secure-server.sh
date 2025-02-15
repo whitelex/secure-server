@@ -112,8 +112,6 @@ if confirm "Do you want to proceed with updating the system?"; then
 
   if [ $? -eq 0 ]; then
     msg "${GREEN}System update completed successfully.${NC}"
-    SUMMARY_MESSAGE+="${GREEN}- System updated.${NC}\n"
-    BASHRC_SUMMARY_MESSAGE+="- Updated system packages\n"
     echo "echo -e \"${GREEN}- System updated.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
     STEP1_PERFORMED=true
   else
@@ -260,9 +258,7 @@ if [[ "$STEP4_PERFORMED" == "true" ]]; then
 
     if [ $? -eq 0 ]; then
       msg "${GREEN}fail2ban service started and enabled successfully.${NC}"
-      SUMMARY_MESSAGE+="${GREEN}- Fail2ban service started and enabled.${NC}\n"
       BASHRC_SUMMARY_MESSAGE+="- Started and enabled Fail2ban service\n"
-      echo "echo -e \"${GREEN}- Fail2ban service started and enabled.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null  # Add to MOTD
     else
       msg "${RED}Error: Failed to start or enable fail2ban service.${NC}"
       exit 1
@@ -336,19 +332,6 @@ else
   msg "${RED}Error: Failed to restart rsyslog service.${NC}"
   exit 1
 fi
-
-# --- Add next steps recommendations ---
-msg "${BLUE}--- Adding next steps and recommendations to ${MOTD_FILE} ---${NC}"
-echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}--- Next Steps and Recommendations ---${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}- Configure a strong firewall (e.g., ufw).${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}- Regularly check system logs for suspicious activity.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}- Disable unnecessary services.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}- Implement intrusion detection and prevention systems (IDS/IPS).${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}- Enable automatic security updates.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}- Harden SSH further (disable password authentication, use key-based authentication, change default port).${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.**${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
-echo "echo -e \"${BLUE}---------------------------------------------------------------${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null
 
 # --- STEP 7: Syntax Highlights/Coloring shell---
 msg "${BLUE}--- STEP 6: Configuring Syntax Highlights & Shell Coloring---${NC}"
