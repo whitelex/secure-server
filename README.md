@@ -31,16 +31,9 @@ The scripts are designed to be interactive, prompting the user for confirmation 
 
 You can download the scripts using `wget`:
 
-**Ubuntu:**
 
 ```bash
 wget https://raw.githubusercontent.com/whitelex/secure-server/refs/heads/main/ubuntu-secure-server.sh
-```
-
-**Ubuntu:**
-
-```bash
-wget https://raw.githubusercontent.com/whitelex/secure-server/refs/heads/main/centos-secure-server.sh
 ```
 
 ### Make the script executable:
