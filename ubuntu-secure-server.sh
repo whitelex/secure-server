@@ -380,7 +380,7 @@ if confirm "Do you want to add the security summary to your .bashrc?"; then
 
   # Add a custom prompt (example: user@host [SECURED] )
   echo "# Custom prompt to indicate security hardening" >> "$HOME/.bashrc"
-  echo 'PS1="\\u@\\h [${GREEN}SECURED${NC}] \\w # "' >> "$HOME/.bashrc"
+  echo 'PS1="\e[0;32m\\u@\\h [SECURED]\e[0m \\w # "' >> "$HOME/.bashrc"
 
   msg "${GREEN}.bashrc updated with security summary and custom prompt.${NC}"
 else
