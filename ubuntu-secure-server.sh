@@ -333,10 +333,10 @@ ${YELLOW}- Enable automatic security updates.${NC}
 ${YELLOW}- Harden SSH further (disable password authentication, use key-based authentication, change default port).${NC}
 ${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.**${NC}" # Added MFA recommendation here
 
-cat <<EOF | sudo tee "$WELCOME_MESSAGE_FILE"
+cat <<'EOMOTD' | sudo tee "$WELCOME_MESSAGE_FILE"
 #!/bin/bash
 
-cat <<EOMOTD
+cat <<EOH
 ${BLUE}---------------------------------------------------------------${NC}
 ${BLUE}          Server Security Hardening Summary                    ${NC}
 ${BLUE}---------------------------------------------------------------${NC}
@@ -346,41 +346,11 @@ ${SUMMARY_MESSAGE}
 ${WELCOME_MOTD_NEXT_STEPS}
 
 ${BLUE}---------------------------------------------------------------${NC}
-EOMOTD
+EOH
 EOF
 
 sudo chmod +x "$WELCOME_MESSAGE_FILE"
 msg "${GREEN}Login welcome message script created at ${WELCOME_MESSAGE_FILE}${NC}"
-
-# --- Configure .bashrc Welcome Message and Prompt ---
-BASHRC_FILE="/root/.bashrc" # Modify root's .bashrc, adjust if needed
-
-msg "${BLUE}--- Configuring .bashrc with summary and custom prompt ---${NC}"
-
-BASHRC_WELCOME_TEXT="
-# Server Security Hardening Summary
-# ---------------------------------
-# This server has been hardened with the following steps:
-$(echo "$BASHRC_SUMMARY_MESSAGE" | sed 's/^/- /')
-# ---------------------------------
-# Next Steps and Recommendations:
-# - Configure a strong firewall (e.g., ufw)
-# - Regularly check system logs for suspicious activity
-# - Disable unnecessary services
-# - Implement intrusion detection and prevention systems (IDS/IPS)
-# - Enable automatic security updates
-# - Harden SSH further (disable password authentication, use key-based authentication, change default port)
-# - **Enable Multi-Factor Authentication (MFA) for SSH logins for enhanced security.** # Added MFA recommendation here
-"
-
-# Append welcome message to .bashrc
-echo -e "\n# --- Security Hardening Summary ---" >> "$BASHRC_FILE"
-echo -e "$BASHRC_WELCOME_TEXT" >> "$BASHRC_FILE"
-
-# Append PS1 prompt to .bashrc
-PS1_LINE="PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '"
-echo -e "\n# Custom Prompt" >> "$BASHRC_FILE"
-echo "$PS1_LINE" >> "$BASHRC_FILE"
 
 
 msg "${GREEN}.bashrc updated with security summary and custom prompt.${NC}"
