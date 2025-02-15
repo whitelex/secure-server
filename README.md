@@ -39,14 +39,12 @@ wget https://raw.githubusercontent.com/whitelex/secure-server/refs/heads/main/ub
 ### Make the script executable:
 
 ```bash
-chmod +x ubuntu-secure-server.sh  # For Ubuntu
-chmod +x centos-secure-server.sh  # For CentOS
+chmod +x ubuntu-secure-server.sh 
 ```
 
 ### Run the script as root
 
 ```bash
-sudo ./ubuntu-secure-server.sh   # For Ubuntu
-sudo ./centos-secure-server.sh   # For CentOS
+sudo ./ubuntu-secure-server.sh   
 ```
 
