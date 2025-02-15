@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+#    00-header - create the header of the MOTD
+
+[ -r /etc/lsb-release ] && . /etc/lsb-release
+
+if [ -z "$DISTRIB_DESCRIPTION" ] && [ -x /usr/bin/lsb_release ]; then
+        # Fall back to using the very slow lsb_release utility
+        DISTRIB_DESCRIPTION=$(lsb_release -s -d)
+fi
+
+printf '  _       __       __                                 __            __  __ ____   __  __ _   __ ______ __  __\n'
+printf ' | |     / /___   / /_____ ____   ____ ___   ___     / /_ ____     / / / // __ ) / / / // | / //_  __// / / /\n'
+printf ' | | /| / // _ \ / // ___// __ \ / __ `__ \ / _ \   / __// __ \   / / / // __  |/ / / //  |/ /  / /  / / / /\n'
+printf ' | |/ |/ //  __// // /__ / /_/ // / / / / //  __/  / /_ / /_/ /  / /_/ // /_/ // /_/ // /|  /  / /  / /_/ /\n'
+printf ' |__/|__/ \___//_/ \___/ \____//_/ /_/ /_/ \___/   \__/ \____/   \____//_____/ \____//_/ |_/  /_/   \____/\n'
+printf '\n'
+printf '\n'
