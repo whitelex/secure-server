@@ -336,6 +336,11 @@ ${YELLOW}- **Enable Multi-Factor Authentication (MFA) for SSH logins for enhance
 cat <<'EOMOTD' | sudo tee "$WELCOME_MESSAGE_FILE"
 #!/bin/bash
 
+# This script generates the server security hardening summary for the MOTD.
+
+SUMMARY_MESSAGE=$(eval echo \"${SUMMARY_MESSAGE}\")
+WELCOME_MOTD_NEXT_STEPS=$(eval echo \"${WELCOME_MOTD_NEXT_STEPS}\")
+
 cat <<EOH
 ${BLUE}---------------------------------------------------------------${NC}
 ${BLUE}          Server Security Hardening Summary                    ${NC}
