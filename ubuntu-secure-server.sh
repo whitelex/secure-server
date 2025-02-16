@@ -333,7 +333,7 @@ else
 fi
 
 # --- STEP 7: Syntax Highlights/Coloring shell---
-msg "${BLUE}--- STEP 6: Configuring Syntax Highlights & Shell Coloring---${NC}"
+msg "${BLUE}--- STEP 7: Configuring Syntax Highlights & Shell Coloring---${NC}"
 STEP7_PERFORMED=false
 
 if confirm "Do you want to proceed with Configuring Syntax Highlights & Shell Coloring?"; then
@@ -351,8 +351,52 @@ else
   msg "${YELLOW}Skipping Syntax Highlights & Shell Coloring configuration.${NC}"
 fi
 
-# --- STEP 8: Security Best Practices (Optional, but Recommended) ---
-msg "${BLUE}--- STEP 7: Security Best Practices (Optional) ---${NC}"
+# --- STEP 8: Enable Google Multi-Factor Authentication (MFA) for SSH ---
+msg "${BLUE}--- STEP 8: Enabling Google Multi-Factor Authentication (MFA) for SSH ---${NC}"
+STEP8_PERFORMED=false
+
+if confirm "Do you want to proceed with enabling Google MFA for SSH?"; then
+  msg "Installing google-authenticator..."
+  sudo apt install libpam-google-authenticator -y
+
+  if [ $? -eq 0 ]; then
+    msg "${GREEN}google-authenticator installed successfully.${NC}"
+    msg "Now, you need to run the google-authenticator command. Follow the on-screen instructions carefully.  You'll need to scan a QR code with your Google Authenticator app and enter verification codes."
+    sudo google-authenticator
+
+    if [ $? -eq 0 ]; then
+      msg "${GREEN}google-authenticator configuration completed.  Remember to save the emergency codes!${NC}"
+      # Add the generated key to /etc/pam.d/sshd
+      echo "auth required pam_google_authenticator.so" | sudo tee -a /etc/pam.d/sshd
+
+      msg "Restarting SSH service to apply changes..."
+      sudo systemctl restart sshd
+
+      if [ $? -eq 0 ]; then
+          msg "${GREEN}SSH service restarted successfully.${NC}"
+          SUMMARY_MESSAGE+="${GREEN}- Google MFA enabled for SSH.${NC}\n"
+          BASHRC_SUMMARY_MESSAGE+="- Enabled Google MFA for SSH\n"
+          echo "echo -e \"${GREEN}- Google MFA enabled for SSH.${NC}\"" | sudo tee -a "$MOTD_FILE" > /dev/null # Add to MOTD
+          STEP8_PERFORMED=true
+      else
+          msg "${RED}Error: Failed to restart SSH service.${NC}"
+          exit 1
+      fi
+
+    else
+      msg "${RED}Error: google-authenticator configuration failed. Please try again.${NC}"
+      exit 1
+    fi
+  else
+    msg "${RED}Error: Failed to install google-authenticator.${NC}"
+    exit 1
+  fi
+else
+  msg "${YELLOW}Skipping Google MFA configuration.${NC}"
+fi
+
+# --- STEP 9: Security Best Practices (Optional, but Recommended) ---
+msg "${BLUE}--- STEP 9: Security Best Practices (Optional) ---${NC}"
 msg "${YELLOW}Consider implementing these additional security measures:${NC}"
 msg "${YELLOW}- Configure a strong firewall (e.g., ufw).${NC}"
 msg "${YELLOW}- Regularly check system logs for suspicious activity.${NC}"
